@@ -1,0 +1,9 @@
+{
+	"botToken": "<botToken">,
+	"chatIds" [<chatId>],
+	"espurna": {
+		"relay": 0,
+		"hostname": "<hostname>",
+		"apiKey": "<apiKey>"
+	}
+}
