@@ -7,7 +7,7 @@ import (
 
 var config struct {
 	BotToken string
-	//TODO: ChatIds []string
+	ChatIds []int64
 	Espurna struct {
 		Relay    int `json:",omitempty"`
 		Hostname string
@@ -23,7 +23,7 @@ func init() {
 	if err = json.NewDecoder(f).Decode(&config); err != nil {
 		panic(err)
 	}
-	if config.BotToken == "" || config.Espurna.ApiKey == "" || config.Espurna.Hostname == "" {
+	if config.BotToken == "" || config.Espurna.ApiKey == "" || config.Espurna.Hostname == "" || len(config.ChatIds) == 0 {
 		panic("json invalid")
 	}
 	// if not relay specified 0 should be chosen. done with go zero value

@@ -26,12 +26,28 @@ func init() {
 	)
 }
 
+func validateChatIds(upd *tb.Update) bool {
+	if upd.Message == nil {
+		return true
+	}
+
+	for _, cid := range config.ChatIds {
+		if cid == upd.Message.Chat.ID {
+			return true
+		}
+	}
+
+	return false
+}
+
 func main() {
 	a := api.NewAPI(config.Espurna.ApiKey, config.Espurna.Hostname, config.Espurna.Relay)
 
+	poller := &tb.LongPoller{Timeout: 10 * time.Second}
+	privateBotPoller := tb.NewMiddlewarePoller(poller, validateChatIds)
 	b, err := tb.NewBot(tb.Settings{
 		Token:  config.BotToken,
-		Poller: &tb.LongPoller{Timeout: 10 * time.Second},
+		Poller: privateBotPoller,
 	})
 	if err != nil {
 		log.Fatal(err)
