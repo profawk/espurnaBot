@@ -2,9 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/profawk/espurnaBot/api"
 	"log"
 	"time"
+
+	"github.com/profawk/espurnaBot/api"
+	"github.com/profawk/espurnaBot/schedule"
 
 	tb "gopkg.in/tucnak/telebot.v2"
 )
@@ -40,18 +42,21 @@ func validateChatIds(upd *tb.Update) bool {
 	return false
 }
 
+func sendApiMessage(b *tb.Bot, dest tb.Recipient, msg string, apiCall func() api.State) {
+	var stateStr string
+	if apiCall() {
+		stateStr = "on"
+	} else {
+		stateStr = "off"
+	}
+	_, err := b.Send(dest, fmt.Sprintf(msg, stateStr), menu)
+	if err != nil {
+		log.Print("status: ", err)
+	}
+}
 func apiMiddleware(b *tb.Bot, apiCall func() api.State) func(m *tb.Message) {
 	return func(m *tb.Message) {
-		var msg string
-		if apiCall() {
-			msg = "on"
-		} else {
-			msg = "off"
-		}
-		_, err := b.Send(m.Sender, fmt.Sprintf("The relay is %s", msg), menu)
-		if err != nil {
-			log.Print("status: ", err)
-		}
+		sendApiMessage(b, m.Sender, "The relay is %s", apiCall)
 	}
 }
 
@@ -71,10 +76,6 @@ func main() {
 	}
 
 	b.Handle("/start", func(m *tb.Message) {
-		if !m.Private() {
-			return
-		}
-
 		b.Send(m.Sender, "Here is the menu", menu)
 	})
 
@@ -82,5 +83,38 @@ func main() {
 	b.Handle(&btnOn, apiMiddleware(b, a.TurnOn))
 	b.Handle(&btnOff, apiMiddleware(b, a.TurnOff))
 
+	b.Handle(&btnSchedule, func(m *tb.Message) {
+		delKeyboard := &tb.ReplyMarkup{}
+		s.L.Lock()
+		defer s.L.Unlock()
+		for id, t := range s.Tasks {
+			delInline := delKeyboard.Data("delete", "delete", id)
+			delKeyboard.Inline(
+				delKeyboard.Row(delInline),
+			)
+			b.Send(m.Sender, t.String(), delKeyboard)
+		}
+		if len(s.Tasks) == 0 {
+			b.Send(m.Sender, "Schedule is empty")
+		}
+	})
+
+	// hacky handler
+	b.Handle("\fdelete", func(c *tb.Callback) {
+		var msg string
+		if c.Data == "" {
+			msg = ""
+		}
+
+		if s.Remove(c.Data) {
+			msg = "task deleted"
+		} else {
+			msg = "failed to delete task, is it already gone?"
+		}
+
+		b.Respond(c, &tb.CallbackResponse{
+			Text: msg,
+		})
+	})
 	b.Start()
 }
