@@ -18,6 +18,9 @@ var (
 	btnOn       = menu.Text("⚡ Power On")
 	btnOff      = menu.Text("🔌 Power Off")
 	btnSchedule = menu.Text("⚙ Schedule")
+
+	delKeyboard = &tb.ReplyMarkup{}
+	delInline   = delKeyboard.Data("delete", "delete").Inline()
 )
 
 func init() {
@@ -84,14 +87,12 @@ func main() {
 	b.Handle(&btnOff, apiMiddleware(b, a.TurnOff))
 
 	b.Handle(&btnSchedule, func(m *tb.Message) {
-		delKeyboard := &tb.ReplyMarkup{}
 		s.L.Lock()
 		defer s.L.Unlock()
 		for id, t := range s.Tasks {
-			delInline := delKeyboard.Data("delete", "delete", id)
-			delKeyboard.Inline(
-				delKeyboard.Row(delInline),
-			)
+			btn := delInline.With(id)
+			btn.URL = "" // until https://github.com/tucnak/telebot/pull/324 gets approved
+			delKeyboard.InlineKeyboard = [][]tb.InlineButton{{*btn}}
 			b.Send(m.Sender, t.String(), delKeyboard)
 		}
 		if len(s.Tasks) == 0 {
@@ -99,8 +100,7 @@ func main() {
 		}
 	})
 
-	// hacky handler
-	b.Handle("\fdelete", func(c *tb.Callback) {
+	b.Handle(delInline, func(c *tb.Callback) {
 		var msg string
 		if c.Data == "" {
 			msg = ""
