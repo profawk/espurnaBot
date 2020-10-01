@@ -85,3 +85,11 @@ func (a api) Turn(state State) State {
 	data.Set("value", st2str(state))
 	return request(http.MethodPut, a.url.String(), strings.NewReader(data.Encode()))
 }
+
+func (a api) TurnOn() State {
+	return a.Turn(On)
+}
+
+func (a api) TurnOff() State {
+	return a.Turn(Off)
+}

@@ -11,18 +11,18 @@ import (
 
 var (
 	// Universal markup builders.
-	menu      = &tb.ReplyMarkup{ResizeReplyKeyboard: true}
-	btnStatus = menu.Text("ℹ Status")
-	btnOn     = menu.Text("⚡ Power On")
-	btnOff    = menu.Text("🔌 Power Off")
-	//btnSchedule = menu.Text("⚙ Schedule")
+	menu        = &tb.ReplyMarkup{ResizeReplyKeyboard: true}
+	btnStatus   = menu.Text("ℹ Status")
+	btnOn       = menu.Text("⚡ Power On")
+	btnOff      = menu.Text("🔌 Power Off")
+	btnSchedule = menu.Text("⚙ Schedule")
 )
 
 func init() {
 	menu.Reply(
 		menu.Row(btnStatus),
 		menu.Row(btnOn, btnOff),
-		//menu.Row(btnSchedule),
+		menu.Row(btnSchedule),
 	)
 }
 
@@ -40,8 +40,24 @@ func validateChatIds(upd *tb.Update) bool {
 	return false
 }
 
+func apiMiddleware(b *tb.Bot, apiCall func() api.State) func(m *tb.Message) {
+	return func(m *tb.Message) {
+		var msg string
+		if apiCall() {
+			msg = "on"
+		} else {
+			msg = "off"
+		}
+		_, err := b.Send(m.Sender, fmt.Sprintf("The relay is %s", msg), menu)
+		if err != nil {
+			log.Print("status: ", err)
+		}
+	}
+}
+
 func main() {
 	a := api.NewAPI(config.Espurna.ApiKey, config.Espurna.Hostname, config.Espurna.Relay)
+	s := schedule.NewSchedule()
 
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
 	privateBotPoller := tb.NewMiddlewarePoller(poller, validateChatIds)
@@ -62,32 +78,9 @@ func main() {
 		b.Send(m.Sender, "Here is the menu", menu)
 	})
 
-	apiMiddleware := func(apiCall func() api.State) func(m *tb.Message) {
-		return func(m *tb.Message) {
-			var msg string
-			if apiCall() {
-				msg = "on"
-			} else {
-				msg = "off"
-			}
-			_, err := b.Send(m.Sender, fmt.Sprintf("The relay is %s", msg), menu)
-			if err != nil {
-				log.Print("status: ", err)
-			}
-		}
-	}
+	b.Handle(&btnStatus, apiMiddleware(b, a.Status))
+	b.Handle(&btnOn, apiMiddleware(b, a.TurnOn))
+	b.Handle(&btnOff, apiMiddleware(b, a.TurnOff))
 
-	b.Handle(&btnStatus, apiMiddleware(a.Status))
-
-	b.Handle(&btnOn, apiMiddleware(func() api.State {
-		return a.Turn(api.On)
-	}))
-
-	b.Handle(&btnOff, apiMiddleware(func() api.State {
-		return a.Turn(api.Off)
-	}))
-
-	//TODO:
-	// add schedules via command and delete with data for constant button "/f"
 	b.Start()
 }
