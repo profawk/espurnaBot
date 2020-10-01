@@ -12,7 +12,6 @@ import (
 )
 
 var (
-	// Universal markup builders.
 	menu        = &tb.ReplyMarkup{ResizeReplyKeyboard: true}
 	btnStatus   = menu.Text("ℹ Status")
 	btnOn       = menu.Text("⚡ Power On")
@@ -20,7 +19,7 @@ var (
 	btnSchedule = menu.Text("⚙ Schedule")
 
 	delKeyboard = &tb.ReplyMarkup{}
-	delInline   = delKeyboard.Data("delete", "delete").Inline()
+	delInline   = delKeyboard.Data("🗑️ Cancel", "delete").Inline()
 )
 
 func init() {
