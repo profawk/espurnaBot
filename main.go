@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"strings"
 	"time"
 
 	"github.com/profawk/espurnaBot/api"
@@ -62,6 +63,19 @@ func apiMiddleware(b *tb.Bot, apiCall func() api.State) func(m *tb.Message) {
 	}
 }
 
+func parseTime(s string) time.Time {
+	t, err := time.ParseInLocation("02/01 03:04", s, time.Local)
+	if err == nil {
+		return time.Date(time.Now().Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, time.Local)
+	}
+	t, err = time.ParseInLocation("03:04", s, time.Local)
+	if err != nil {
+		log.Printf("can't parse time")
+		return time.Time{}
+	}
+	return schedule.Next(t.Hour(), t.Minute())
+}
+
 func main() {
 	a := api.NewAPI(config.Espurna.ApiKey, config.Espurna.Hostname, config.Espurna.Relay)
 	s := schedule.NewSchedule()
@@ -79,6 +93,51 @@ func main() {
 
 	b.Handle("/start", func(m *tb.Message) {
 		b.Send(m.Sender, "Here is the menu", menu)
+	})
+
+	b.Handle("/help", func(m *tb.Message) {
+		b.Send(m.Sender, "/start to start\n/schedule to add a schedule - /schedule 20/12 10:25,off,yes", menu)
+	})
+
+	b.Handle("/schedule", func(m *tb.Message) {
+		parts := strings.Split(m.Payload, ",")
+		when, what, recurring := parts[0], parts[1], parts[2]
+
+		var f func() api.State
+		var desc string
+		switch what {
+		case "on":
+			f = a.TurnOn
+			desc = "turn on"
+		case "off":
+			f = a.TurnOff
+			desc = "turn off"
+		case "status":
+			f = a.Status
+			desc = "get status"
+		default:
+			log.Printf("bad status")
+		}
+
+		var recur bool
+		switch recurring {
+		case "yes":
+			recur = true
+		case "no":
+			recur = false
+		default:
+			log.Printf("bad recurring")
+		}
+
+		task := schedule.Task{
+			When:      parseTime(when),
+			What:      apiTaskAdapter(b, m.Sender, f),
+			Desc:      desc,
+			Recurring: recur,
+		}
+		s.Add(task)
+
+		b.Send(m.Sender, "Task has been added\n"+task.String(), menu)
 	})
 
 	b.Handle(&btnStatus, apiMiddleware(b, a.Status))
