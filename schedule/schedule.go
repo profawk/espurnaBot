@@ -3,6 +3,7 @@ package schedule
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"sync"
 	"time"
 )
@@ -31,7 +32,11 @@ type Task struct {
 }
 
 func (t Task) String() string {
-	return t.Desc + t.When.String()
+	format := "Task: %s\nAt: %s"
+	if t.Recurring {
+		format = "Recurring " + format
+	}
+	return fmt.Sprintf(format, t.Desc, t.When.Format("02/01 15:04 (Mon)"))
 }
 
 type Schedule struct {
