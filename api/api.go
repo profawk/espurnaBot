@@ -45,9 +45,9 @@ func request(method, url string, body io.Reader) State {
 		panic(errors.Wrap(err, "api.request.Do"))
 	}
 	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		panic(errors.Wrap(err, "api.request.Do2"))
 
+	if resp.StatusCode != http.StatusOK {
+		panic(errors.Wrap(fmt.Errorf("got response status %d", resp.StatusCode), "api.request"))
 	}
 
 	var m map[string]int
@@ -60,7 +60,8 @@ func request(method, url string, body io.Reader) State {
 		// return the first (and only) value, ignoring the key
 		return value == 1
 	}
-	panic(errors.Wrap(err, "api.request no values"))
+
+	panic(errors.Wrap(fmt.Errorf("no values in response"), "api.request"))
 
 }
 
