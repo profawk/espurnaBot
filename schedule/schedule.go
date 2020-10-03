@@ -36,7 +36,7 @@ func (t Task) String() string {
 	if t.Recurring {
 		format = "Recurring " + format
 	}
-	return fmt.Sprintf(format, t.Desc, t.When.Format("02/01 15:04 (Mon)"))
+	return fmt.Sprintf(format, t.Desc, t.When.In(time.Local).Format("02/01 15:04 (Mon)"))
 }
 
 type Schedule struct {
