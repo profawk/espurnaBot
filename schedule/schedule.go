@@ -13,11 +13,19 @@ func TomorrowAt(hour, minute int) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day()+1, hour, minute, 0, 0, t.Location())
 }
 
-func Next(hour, minute int) time.Time {
+func NextTime(hour, minute int) time.Time {
 	t := time.Now()
 	n := time.Date(t.Year(), t.Month(), t.Day(), hour, minute, 0, 0, t.Location())
 	if t.After(n) {
 		n = n.Add(24 * time.Hour)
+	}
+	return n
+}
+func NextDate(month time.Month, day, hour, minute int) time.Time {
+	t := time.Now()
+	n := time.Date(t.Year(), month, day, hour, minute, 0, 0, t.Location())
+	if t.After(n) {
+		return time.Date(t.Year()+1, month, day, hour, minute, 0, 0, t.Location())
 	}
 	return n
 }

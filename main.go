@@ -63,17 +63,20 @@ func apiMiddleware(b *tb.Bot, apiCall func() api.State) func(m *tb.Message) {
 	}
 }
 
-func parseTime(s string) time.Time {
-	t, err := time.ParseInLocation("02/01 03:04", s, time.Local)
-	if err == nil {
-		return time.Date(time.Now().Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), 0, 0, time.Local)
-	}
-	t, err = time.ParseInLocation("03:04", s, time.Local)
+func parseTime(s string) (time.Time, error) {
+	parts := strings.Split(s, " ")
+	t, err := time.ParseInLocation("15:04", parts[len(parts)-1], time.Local)
 	if err != nil {
-		log.Printf("can't parse time")
-		return time.Time{}
+		return time.Time{}, err
 	}
-	return schedule.Next(t.Hour(), t.Minute())
+	if len(parts) != 2 {
+		return schedule.NextTime(t.Hour(), t.Minute()), nil
+	}
+	date, err := time.Parse("2/1", parts[0])
+	if err != nil {
+		return time.Time{}, err
+	}
+	return schedule.NextDate(date.Month(), date.Day(), t.Hour(), t.Minute()), nil
 }
 
 func main() {
@@ -116,7 +119,9 @@ func main() {
 			f = a.Status
 			desc = "get status"
 		default:
-			log.Printf("bad status")
+			log.Println("bad status")
+			b.Send(m.Sender, "bad status")
+			return
 		}
 
 		var recur bool
@@ -126,11 +131,20 @@ func main() {
 		case "no":
 			recur = false
 		default:
-			log.Printf("bad recurring")
+			log.Println("bad recurring")
+			b.Send(m.Sender, "bad recurring")
+			return
+		}
+
+		t, err := parseTime(when)
+		if err != nil {
+			log.Println("bad time")
+			b.Send(m.Sender, "bad time")
+			return
 		}
 
 		task := schedule.Task{
-			When:      parseTime(when),
+			When:      t,
 			What:      apiTaskAdapter(b, m.Sender, f),
 			Desc:      desc,
 			Recurring: recur,
@@ -159,20 +173,25 @@ func main() {
 	})
 
 	b.Handle(delInline, func(c *tb.Callback) {
-		var msg string
 		if c.Data == "" {
-			msg = ""
+			b.Respond(c)
+			return
 		}
 
+		var msg string
 		if s.Remove(c.Data) {
 			msg = "task deleted"
 		} else {
 			msg = "failed to delete task, is it already gone?"
 		}
+		// this or b.Delete(c.Message)
+		origMsg := c.Message
+		b.Edit(origMsg, "Deleted task\n"+origMsg.Text, &tb.ReplyMarkup{})
 
 		b.Respond(c, &tb.CallbackResponse{
 			Text: msg,
 		})
 	})
+
 	b.Start()
 }
