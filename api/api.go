@@ -16,9 +16,15 @@ type State bool
 const On State = true
 const Off State = false
 
+var StateNames = map[State]string{
+	On:  "on",
+	Off: "off",
+}
+
 type api struct {
-	url url.URL
-	key string
+	url            url.URL
+	key            string
+	LastKnownState State
 }
 
 func NewAPI(key string, host string, relay int) *api {
@@ -65,7 +71,8 @@ func request(method, url string, body io.Reader) State {
 
 }
 
-func (a api) Status() State {
+func (a *api) Status() (s State) {
+	defer func() { a.LastKnownState = s }()
 	q := a.url.Query()
 	q.Set("apikey", a.key)
 	a.url.RawQuery = q.Encode()
@@ -80,17 +87,18 @@ func st2str(s State) string {
 	return strconv.Itoa(si)
 }
 
-func (a api) Turn(state State) State {
+func (a *api) Turn(state State) (s State) {
+	defer func() { a.LastKnownState = s }()
 	data := url.Values{}
 	data.Set("apikey", a.key)
 	data.Set("value", st2str(state))
 	return request(http.MethodPut, a.url.String(), strings.NewReader(data.Encode()))
 }
 
-func (a api) TurnOn() State {
+func (a *api) TurnOn() State {
 	return a.Turn(On)
 }
 
-func (a api) TurnOff() State {
+func (a *api) TurnOff() State {
 	return a.Turn(Off)
 }

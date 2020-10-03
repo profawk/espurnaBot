@@ -61,12 +61,7 @@ func validateChatIds(upd *tb.Update) bool {
 }
 
 func sendApiMessage(b *tb.Bot, dest tb.Recipient, msg string, apiCall func() api.State) {
-	var stateStr string
-	if apiCall() {
-		stateStr = "on"
-	} else {
-		stateStr = "off"
-	}
+	stateStr := api.StateNames[apiCall()]
 	_, err := b.Send(dest, fmt.Sprintf(msg, stateStr), menu)
 	if err != nil {
 		log.Print("status: ", err)
@@ -147,6 +142,27 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 		return
+	}
+
+	if config.Watchdog {
+		t := time.NewTicker(1 * time.Minute)
+		go func() {
+			a.Status() // set LastKnownState to known good value
+			for range t.C {
+				s := a.LastKnownState
+				newS := a.Status()
+				if newS == s {
+					continue
+				}
+				for _, chatId := range config.ChatIds {
+					b.Send(
+						tb.ChatID(chatId),
+						fmt.Sprintf("relay state has changed. it is now %s", api.StateNames[newS]),
+					)
+				}
+
+			}
+		}()
 	}
 
 	b.Handle("/start", func(m *tb.Message) {
