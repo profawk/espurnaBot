@@ -127,6 +127,15 @@ func parseTime(s string) (time.Time, error) {
 
 func main() {
 	a := api.NewAPI(config.Espurna.ApiKey, config.Espurna.Hostname, config.Espurna.Relay)
+
+	addApiButtons := map[string]struct {
+		what func() api.State
+		desc string
+	}{
+		addApiStatus.Unique: {a.Status, "Get status"},
+		addApiOn.Unique:     {a.TurnOn, "Turn on relay"},
+		addApiOff.Unique:    {a.TurnOff, "Turn off relay"},
+	}
 	s := schedule.NewSchedule()
 
 	poller := &tb.LongPoller{Timeout: 10 * time.Second}
@@ -148,7 +157,7 @@ func main() {
 		b.Send(m.Sender, "/start to start\n/schedule to add a schedule - /schedule 20/12 10:25,off,yes", menu)
 	})
 
-	b.Handle("/schedule", func(m *tb.Message) {
+	b.Handle("/schedule_full", func(m *tb.Message) {
 		parts := strings.Split(m.Payload, ",")
 		when, what, recurring := parts[0], parts[1], parts[2]
 
@@ -200,7 +209,7 @@ func main() {
 		b.Send(m.Sender, "Task has been added\n"+task.String(), menu)
 	})
 
-	b.Handle("/schedule2", func(m *tb.Message) {
+	b.Handle("/schedule", func(m *tb.Message) {
 		t, err := parseTime(m.Payload)
 		if err != nil {
 			b.Send(m.Sender, "Could not parse time. is it in [dd/mm] hh:mm")
@@ -216,6 +225,46 @@ func main() {
 	b.Handle(&btnStatus, apiMiddleware(b, a.Status))
 	b.Handle(&btnOn, apiMiddleware(b, a.TurnOn))
 	b.Handle(&btnOff, apiMiddleware(b, a.TurnOff))
+
+	b.Handle(addApiOn, addApiHandler(b, addApiOn.Unique))
+	b.Handle(addApiOff, addApiHandler(b, addApiOff.Unique))
+	b.Handle(addApiStatus, addApiHandler(b, addApiStatus.Unique))
+
+	b.Handle(addRecurring, addRecurringHandler(b, addRecurring.Unique))
+
+	b.Handle(addCancel, func(c *tb.Callback) {
+		b.Delete(c.Message)
+		b.Respond(c)
+	})
+
+	b.Handle(addDone, func(c *tb.Callback) {
+		var repr taskRepr
+		repr.UnmarshalText([]byte(c.Data))
+		if repr.what == "" {
+			b.Respond(c, &tb.CallbackResponse{Text: "Not done yet!"})
+			return
+		}
+		var what func()
+		var desc string
+		for name, f := range addApiButtons {
+			if name == repr.what {
+				what = apiTaskAdapter(b, c.Sender, f.what)
+				desc = f.desc
+			}
+		}
+		task := schedule.Task{
+			When:      repr.when,
+			What:      what,
+			Desc:      desc,
+			Recurring: repr.recurring,
+		}
+		s.Add(task)
+
+		b.Delete(c.Message)
+		b.Respond(c, &tb.CallbackResponse{Text: "Task has been added\n"})
+		b.Send(c.Sender, "Task has been added\n"+task.String(), menu)
+
+	})
 
 	b.Handle(&btnSchedule, func(m *tb.Message) {
 		s.L.Lock()
