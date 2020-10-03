@@ -7,8 +7,8 @@ import (
 
 var config struct {
 	BotToken string
-	ChatIds []int64
-	Espurna struct {
+	ChatIds  []int64
+	Espurna  struct {
 		Relay    int `json:",omitempty"`
 		Hostname string
 		ApiKey   string

@@ -27,8 +27,8 @@ var (
 	addApiOn     = addKeyboard.Data("Turn on", "on").Inline()
 	addApiOff    = addKeyboard.Data("Turn off", "off").Inline()
 	addRecurring = addKeyboard.Data("Recurring", "recurring").Inline()
-	addDone      = addKeyboard.Data("Done", "done").Inline()
-	addCancel    = addKeyboard.Data("Cancel", "cancel").Inline()
+	addDone      = addKeyboard.Data("Done  ✔️", "done").Inline()
+	addCancel    = addKeyboard.Data("Cancel  ❌", "cancel").Inline()
 )
 
 func init() {
@@ -91,8 +91,8 @@ func getAddKeyboard(repr taskRepr) *tb.ReplyMarkup {
 			*with(addRecurring, data),
 		},
 		{
-			*with(addDone, data),
 			*with(addCancel, data),
+			*with(addDone, data),
 		},
 	}
 	for i, b := range keyboard[0] {
@@ -104,7 +104,7 @@ func getAddKeyboard(repr taskRepr) *tb.ReplyMarkup {
 		keyboard[0][i].Text = color + keyboard[0][i].Text
 	}
 	if repr.recurring {
-		keyboard[1][0].Text = "\U0001F7E2  " + keyboard[1][0].Text
+		keyboard[1][0].Text = "\U0001F501  " + keyboard[1][0].Text
 	}
 	return &tb.ReplyMarkup{InlineKeyboard: keyboard}
 }
@@ -154,7 +154,7 @@ func main() {
 	})
 
 	b.Handle("/help", func(m *tb.Message) {
-		b.Send(m.Sender, "/start to start\n/schedule to add a schedule - /schedule 20/12 10:25,off,yes", menu)
+		b.Send(m.Sender, "/start to start\n/schedule to add a schedule - /schedule 20/12 10:25", menu)
 	})
 
 	b.Handle("/schedule_full", func(m *tb.Message) {
@@ -219,7 +219,8 @@ func main() {
 		repr := taskRepr{
 			when: t,
 		}
-		b.Send(m.Sender, "Great! now choose what to do", getAddKeyboard(repr))
+		msg := fmt.Sprintf("Great! a task is scheduled for %s\n now choose what to do", t.Format("02/01/06 15:04 MST (Mon)"))
+		b.Send(m.Sender, msg, getAddKeyboard(repr))
 	})
 
 	b.Handle(&btnStatus, apiMiddleware(b, a.Status))
