@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
+	"fmt"
 	"os"
 )
 
@@ -16,8 +18,16 @@ var config struct {
 	}
 }
 
+var filePath = flag.String("c", "config.json", "config file path")
+
 func init() {
-	f, err := os.Open("config.json")
+	flag.Parse()
+	if _, err := os.Stat(*filePath); os.IsNotExist(err) {
+		fmt.Println("config file not found")
+		flag.Usage()
+		os.Exit(1)
+	}
+	f, err := os.Open(*filePath)
 	if err != nil {
 		panic(err)
 	}
