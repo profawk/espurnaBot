@@ -1,6 +1,7 @@
 {
 	"botToken": "<botToken">,
 	"chatIds" [<chatId>],
+	"watchdog": false,
 	"espurna": {
 		"relay": 0,
 		"hostname": "<hostname>",
