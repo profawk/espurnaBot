@@ -18,6 +18,7 @@ var (
 	btnOn       = menu.Text("⚡ Power On")
 	btnOff      = menu.Text("🔌 Power Off")
 	btnSchedule = menu.Text("⚙ Schedule")
+	btnAddTask  = menu.Text("➕ Add Task")
 
 	delKeyboard = &tb.ReplyMarkup{}
 	delInline   = delKeyboard.Data("🗑️ Cancel", "delete").Inline()
@@ -35,7 +36,7 @@ func init() {
 	menu.Reply(
 		menu.Row(btnStatus),
 		menu.Row(btnOn, btnOff),
-		menu.Row(btnSchedule),
+		menu.Row(btnSchedule, btnAddTask),
 	)
 }
 
@@ -225,7 +226,7 @@ func main() {
 		b.Send(m.Sender, "Task has been added\n"+task.String(), menu)
 	})
 
-	b.Handle("/schedule", func(m *tb.Message) {
+	newTaskHandler := func(m *tb.Message) {
 		t, err := parseTime(m.Payload)
 		if err != nil {
 			b.Send(m.Sender, "Could not parse time. is it in [dd/mm] hh:mm")
@@ -237,8 +238,21 @@ func main() {
 		}
 		msg := fmt.Sprintf("Great! a task is scheduled for %s\n now choose what to do", t.Format("02/01/06 15:04 MST (Mon)"))
 		b.Send(m.Sender, msg, getAddKeyboard(repr))
+	}
+
+	b.Handle("/schedule", newTaskHandler)
+
+	b.Handle(&btnAddTask, func(m *tb.Message) {
+		b.Send(m.Sender, newTaskMagic, tb.ForceReply)
 	})
 
+	b.Handle(tb.OnText, func(m *tb.Message) {
+		if m.ReplyTo.Text != newTaskMagic {
+			return
+		}
+		m.Payload = m.Text
+		newTaskHandler(m)
+	})
 	b.Handle(&btnStatus, apiMiddleware(b, a.Status))
 	b.Handle(&btnOn, apiMiddleware(b, a.TurnOn))
 	b.Handle(&btnOff, apiMiddleware(b, a.TurnOff))

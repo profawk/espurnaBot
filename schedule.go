@@ -14,6 +14,13 @@ func apiTaskAdapter(b *tb.Bot, dest tb.Recipient, apiCall func() api.State) func
 	}
 }
 
+const newTaskMagic = `to create a new task reply to this message with the desired time in this format
+
+"[dd/mm] hh:mm"
+
+(day and month are optional)
+to cancel simply /start`
+
 type taskRepr struct {
 	when      time.Time
 	what      string
