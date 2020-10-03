@@ -52,12 +52,14 @@ func validateChatIds(upd *tb.Update) bool {
 		return true
 	}
 
-	for _, cid := range config.ChatIds {
-		if cid == upd.Message.Chat.ID {
+	chatID := upd.Message.Chat.ID
+	for _, allowedID := range config.ChatIds {
+		if allowedID == chatID {
 			return true
 		}
 	}
 
+	log.Printf("chat ID %d is not in allowed chat ids", chatID)
 	return false
 }
 
