@@ -169,16 +169,22 @@ func SetHandlers(b *tb.Bot, a api.Api, s *schedule.Schedule) {
 		b.Respond(c)
 	})
 
-	addApiButtons := map[string]struct {
-		what api.ApiCall
-		desc string
-	}{
-		addApiStatus.Unique: {a.Status, "Get status"},
-		addApiOn.Unique:     {a.TurnOn, "Turn on relay"},
-		addApiOff.Unique:    {a.TurnOff, "Turn off relay"},
-	}
-
 	b.Handle(addDone, func(c *tb.Callback) {
+
+		addApiButtons := map[string]struct {
+			what api.ApiCall
+			desc string
+		}{
+			addApiStatus.Unique: {a.Status, "Get status"},
+			addApiOn.Unique: {func() (api.State, error) {
+				onTrigger(b, c.Sender)
+				return a.TurnOn()
+			}, "Turn on relay"},
+			addApiOff.Unique: {func() (api.State, error) {
+				offTrigger(b, c.Sender)
+				return a.TurnOff()
+			}, "Turn off relay"},
+		}
 		var repr taskRepr
 		repr.UnmarshalText([]byte(c.Data))
 		if repr.what == "" {
