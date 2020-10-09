@@ -93,7 +93,15 @@ func main() {
 	if config.Watchdog {
 		t := time.NewTicker(1 * time.Minute)
 		go func() {
-			a.Status() // set LastKnownState to known good value
+			for range t.C {
+				// set LastKnownState to known good value
+				_, err := a.Status()
+				// loop until no error
+				if err == nil {
+					break
+				}
+				log.Print("error while starting watchdog", err, "retrying")
+			}
 			for range t.C {
 				s := a.LastKnownState
 				newS, err := a.Status()
