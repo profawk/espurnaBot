@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func apiTaskAdapter(b *tb.Bot, dest tb.Recipient, apiCall func() api.State) func() {
+func apiTaskAdapter(b *tb.Bot, dest tb.Recipient, apiCall api.ApiCall) func() {
 	return func() {
 		sendApiMessage(b, dest, "Task executed\nThe relay is %s", apiCall)
 	}

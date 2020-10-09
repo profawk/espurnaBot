@@ -63,14 +63,21 @@ func validateChatIds(upd *tb.Update) bool {
 	return false
 }
 
-func sendApiMessage(b *tb.Bot, dest tb.Recipient, msg string, apiCall func() api.State) {
-	stateStr := api.StateNames[apiCall()]
-	_, err := b.Send(dest, fmt.Sprintf(msg, stateStr), menu)
+func sendApiMessage(b *tb.Bot, dest tb.Recipient, tpl string, apiCall api.ApiCall) {
+	s, err := apiCall()
+	var msg string
+	if err != nil {
+		log.Print("sendApiMessage tpl: ", tpl, "err: ", err)
+		msg = fmt.Sprintf("error occured %v", err)
+	} else {
+		msg = fmt.Sprintf(tpl, api.StateNames[s])
+	}
+	_, err = b.Send(dest, msg, menu)
 	if err != nil {
 		log.Print("status: ", err)
 	}
 }
-func apiMiddleware(b *tb.Bot, apiCall func() api.State) func(m *tb.Message) {
+func apiMiddleware(b *tb.Bot, apiCall api.ApiCall) func(m *tb.Message) {
 	return func(m *tb.Message) {
 		sendApiMessage(b, m.Sender, "The relay is %s", apiCall)
 	}
@@ -127,7 +134,7 @@ func main() {
 	a := api.NewAPI(config.Espurna.ApiKey, config.Espurna.Hostname, config.Espurna.Relay)
 
 	addApiButtons := map[string]struct {
-		what func() api.State
+		what api.ApiCall
 		desc string
 	}{
 		addApiStatus.Unique: {a.Status, "Get status"},
@@ -153,7 +160,10 @@ func main() {
 			a.Status() // set LastKnownState to known good value
 			for range t.C {
 				s := a.LastKnownState
-				newS := a.Status()
+				newS, err := a.Status()
+				if err != nil {
+					log.Print("error in watchdog", err)
+				}
 				if newS == s {
 					continue
 				}
@@ -180,7 +190,7 @@ func main() {
 		parts := strings.Split(m.Payload, ",")
 		when, what, recurring := parts[0], parts[1], parts[2]
 
-		var f func() api.State
+		var f api.ApiCall
 		var desc string
 		switch what {
 		case "on":
