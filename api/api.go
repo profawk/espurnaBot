@@ -16,7 +16,7 @@ type ApiCall func() (State, error)
 
 const On State = true
 const Off State = false
-const unkonwn State = Off
+const unknown State = Off
 
 var StateNames = map[State]string{
 	On:  "on",
@@ -43,25 +43,25 @@ func NewAPI(key string, host string, relay int) *Api {
 func request(method, url string, body io.Reader) (State, error) {
 	r, err := http.NewRequest(method, url, body)
 	if err != nil {
-		return unkonwn, errors.Wrap(err, "api.request.NewRequest")
+		return unknown, errors.Wrap(err, "api.request.NewRequest")
 	}
 
 	r.Header.Add("Accept", "application/json")
 	r.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	resp, err := http.DefaultClient.Do(r)
 	if err != nil {
-		return unkonwn, errors.Wrap(err, "api.request.Do")
+		return unknown, errors.Wrap(err, "api.request.Do")
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		return unkonwn, errors.Wrap(fmt.Errorf("got response status %d", resp.StatusCode), "api.request")
+		return unknown, errors.Wrap(fmt.Errorf("got response status %d", resp.StatusCode), "api.request")
 	}
 
 	var m map[string]int
 	err = json.NewDecoder(resp.Body).Decode(&m)
 	if err != nil {
-		return unkonwn, errors.Wrap(err, "api.request.Decode")
+		return unknown, errors.Wrap(err, "api.request.Decode")
 	}
 
 	for _, value := range m {
@@ -69,7 +69,7 @@ func request(method, url string, body io.Reader) (State, error) {
 		return value == 1, nil
 	}
 
-	return unkonwn, errors.Wrap(fmt.Errorf("no values in response"), "api.request")
+	return unknown, errors.Wrap(fmt.Errorf("no values in response"), "api.request")
 
 }
 
