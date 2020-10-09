@@ -149,8 +149,14 @@ func SetHandlers(b *tb.Bot, a api.Api, s *schedule.Schedule) {
 		newTaskHandler(m)
 	})
 	b.Handle(&btnStatus, apiMiddleware(b, a.Status))
-	b.Handle(&btnOn, apiMiddleware(b, a.TurnOn))
-	b.Handle(&btnOff, apiMiddleware(b, a.TurnOff))
+	b.Handle(&btnOn, func(m *tb.Message) {
+		sendApiMessage(b, m.Sender, "The relay is %s", a.TurnOn)
+		onTrigger(b, m.Sender)
+	})
+	b.Handle(&btnOff, func(m *tb.Message) {
+		sendApiMessage(b, m.Sender, "The relay is %s", a.TurnOff)
+		offTrigger(b, m.Sender)
+	})
 
 	b.Handle(addApiOn, addApiHandler(b, addApiOn.Unique))
 	b.Handle(addApiOff, addApiHandler(b, addApiOff.Unique))

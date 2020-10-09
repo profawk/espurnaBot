@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"github.com/profawk/espurnaBot/bot"
 	"os"
 )
 
@@ -16,6 +17,7 @@ var config struct {
 		Hostname string
 		ApiKey   string
 	}
+	Triggers bot.Triggers
 }
 
 var filePath = flag.String("c", "config.json", "config file path")

@@ -75,6 +75,7 @@ func main() {
 		}()
 	}
 
+	bot.AddTriggers(config.Triggers)
 	bot.SetHandlers(b, a, s)
 	b.Start()
 }

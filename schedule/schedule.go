@@ -85,6 +85,10 @@ func (s *Schedule) Add(task Task) {
 func (s *Schedule) Remove(taskId string) bool {
 	s.L.Lock()
 	defer s.L.Unlock()
+	return s.RemoveNoLock(taskId)
+}
+
+func (s *Schedule) RemoveNoLock(taskId string) bool {
 	t, ok := s.Tasks[taskId]
 	if !ok {
 		return false

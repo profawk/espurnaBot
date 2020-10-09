@@ -7,4 +7,10 @@
 		"hostname": "<hostname>",
 		"apiKey": "<apiKey>"
 	}
+	"triggers" : {
+	    "on" {
+	        "The relay is on for %s": ["30m", "1h"],
+	        "The relay on for a long time!": ["2h"]
+	    }
+	}
 }
