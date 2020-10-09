@@ -23,14 +23,22 @@ var StateNames = map[State]string{
 	Off: "off",
 }
 
-type Api struct {
+type api struct {
 	url            url.URL
 	key            string
-	LastKnownState State
+	lastKnownState State
 }
 
-func NewAPI(key string, host string, relay int) *Api {
-	return &Api{
+type Api interface {
+	Status() (State, error)
+	Turn(State) (State, error)
+	TurnOn() (State, error)
+	TurnOff() (State, error)
+	LastKnownState() State
+}
+
+func NewAPI(key string, host string, relay int) *api {
+	return &api{
 		key: key,
 		url: url.URL{
 			Scheme: "http",
@@ -73,10 +81,10 @@ func request(method, url string, body io.Reader) (State, error) {
 
 }
 
-func (a *Api) Status() (s State, err error) {
+func (a *api) Status() (s State, err error) {
 	defer func() {
 		if err == nil {
-			a.LastKnownState = s
+			a.lastKnownState = s
 		}
 	}()
 	q := a.url.Query()
@@ -93,10 +101,10 @@ func st2str(s State) string {
 	return strconv.Itoa(si)
 }
 
-func (a *Api) Turn(state State) (s State, err error) {
+func (a *api) Turn(state State) (s State, err error) {
 	defer func() {
 		if err == nil {
-			a.LastKnownState = s
+			a.lastKnownState = s
 		}
 	}()
 	data := url.Values{}
@@ -105,10 +113,13 @@ func (a *Api) Turn(state State) (s State, err error) {
 	return request(http.MethodPut, a.url.String(), strings.NewReader(data.Encode()))
 }
 
-func (a *Api) TurnOn() (s State, err error) {
+func (a *api) TurnOn() (s State, err error) {
 	return a.Turn(On)
 }
 
-func (a *Api) TurnOff() (s State, err error) {
+func (a *api) TurnOff() (s State, err error) {
 	return a.Turn(Off)
+}
+func (a *api) LastKnownState() State {
+	return a.lastKnownState
 }

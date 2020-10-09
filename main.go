@@ -56,7 +56,7 @@ func main() {
 				log.Print("error while starting watchdog", err, "retrying")
 			}
 			for range t.C {
-				s := a.LastKnownState
+				s := a.LastKnownState()
 				newS, err := a.Status()
 				if err != nil {
 					log.Print("error in watchdog", err)

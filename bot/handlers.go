@@ -45,7 +45,6 @@ func with(b *tb.InlineButton, data string) *tb.InlineButton {
 	return nb
 }
 
-
 func parseTime(s string) (time.Time, error) {
 	parts := strings.Split(s, " ")
 	t, err := time.ParseInLocation("15:04", parts[len(parts)-1], time.Local)
@@ -61,7 +60,6 @@ func parseTime(s string) (time.Time, error) {
 	}
 	return schedule.NextDate(date.Month(), date.Day(), t.Hour(), t.Minute()), nil
 }
-
 
 func getAddKeyboard(repr taskRepr) *tb.ReplyMarkup {
 	marsh, _ := repr.MarshalText()
@@ -94,7 +92,6 @@ func getAddKeyboard(repr taskRepr) *tb.ReplyMarkup {
 	return &tb.ReplyMarkup{InlineKeyboard: keyboard}
 }
 
-
 func sendApiMessage(b *tb.Bot, dest tb.Recipient, tpl string, apiCall api.ApiCall) {
 	s, err := apiCall()
 	var msg string
@@ -115,7 +112,7 @@ func apiMiddleware(b *tb.Bot, apiCall api.ApiCall) func(m *tb.Message) {
 	}
 }
 
-func SetHandlers(b *tb.Bot, a *api.Api, s *schedule.Schedule) {
+func SetHandlers(b *tb.Bot, a api.Api, s *schedule.Schedule) {
 	b.Handle("/start", func(m *tb.Message) {
 		b.Send(m.Sender, "Here is the menu", menu)
 	})
