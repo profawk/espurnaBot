@@ -1,14 +1,14 @@
 {
-	"botToken": "<botToken">,
-	"chatIds" [<chatId>],
+	"botToken": "<botToken>",
+	"chatIds": [<chatId>],
 	"watchdog": false,
 	"espurna": {
 		"relay": 0,
 		"hostname": "<hostname>",
 		"apiKey": "<apiKey>"
-	}
-	"triggers" : {
-	    "on" {
+	},
+	"triggers": {
+	    "on": {
 	        "The relay is on for %s": ["30m", "1h"],
 	        "The relay on for a long time!": ["2h"]
 	    }
